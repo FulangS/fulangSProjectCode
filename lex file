@@ -1,0 +1,182 @@
+/***************************************************************************
+Scanner for the Simple language
+***************************************************************************/
+%{
+/*=========================================================================
+C-libraries and Token definitions
+=========================================================================*/
+#include <string.h> /* for strdup */
+/*#include <stdlib.h> */ /* for atoi */
+#include "y.tab.h" /* for token definitions and yylval */
+
+#define TABSIZE 1000
+#define true 1
+#define false 0
+ 
+char* var_names[TABSIZE];  // string array where the variable names will be stored
+int var_def[TABSIZE];      // flag to determine whether a var is defined
+int n_of_names = 0;         // counter of variables
+
+ 
+void reset()
+{
+    /* this will just reset all the flags to false */
+    int j;
+    for(j = 0; j < TABSIZE; j++)
+        var_def[j] = false;
+}
+ 
+int installs(char *txt)
+{//return the index of the var_name in the array
+    int j; char *s;
+     
+    /* if the table of var_names is still empty */
+    /* add the first record at 0 and return 0 */
+    if(n_of_names == 0) {
+        s = strdup(txt);
+        var_names[0] = s;
+        ++n_of_names;
+        return 0;
+    }
+     
+    /* if the table has contents already, return the index */
+    for(j = 0; j < n_of_names; ++j) {
+        if(strcmp(txt, var_names[j]) == 0) {
+            return j;
+        }
+    }
+     
+    /* if the table is not empty and the var name is not yet listed */
+    /* list the new var name and return the index */
+    s = strdup(txt);
+    var_names[j] = s;
+    ++n_of_names;
+    return j;
+}
+
+
+char* mysubstr(char str[])
+{ 
+	int c=0, lim=strlen(str)-2, d=1;
+	char sub[lim];
+	while(c<lim){
+		sub[c]=str[d];
+		c++;d++;
+	}
+	sub[c]='\0';
+	return sub;
+    
+}
+
+%}
+/*=========================================================================
+TOKEN Definitions
+=========================================================================*/
+DIGIT [0-9]
+ID [a-zA-Z][_a-zA-Z0-9]*
+co      ["]
+
+/*=========================================================================
+REGULAR EXPRESSIONS defining the tokens for the Simple language
+=========================================================================*/
+%%
+"=" { return(ASSGNOP); }
+"<" {return (LTH);}
+">" {return (GTH);}
+"=<" {return (LTHE);}
+"=>" {return (GTHE);}
+"!=" {return (NEQU);}
+"==" {return (EQU);}
+"++" {return (INCRE);}
+"--" {return (DECRE);}
+"+=" {return (SHADD);}
+"-=" {return (SHSUB);}
+"*=" {return (SHMUL);}
+"/=" {return (SHDIV);}
+"%=" {return (SHMULD);}
+"<<" {return (LSHIFT);}
+">>" {return (RSHIFT);}
+"<<=" {return (SHLSHIFT);}
+">>=" {return (SHRSHIFT);}
+"#=" {return (SHBITXOR);}
+"&=" {return (SHBITAND);}
+"|=" {return (SHBITOR);}
+"&" {return (BITANDD);}
+"|" {return (BITORR);}
+"#" {return (BITXORR);}
+"<"{ID}">" {;}
+{DIGIT}+ { yylval.intval = atoi( yytext );return(NUMBER); }
+(?i:or) { return(OR); }
+(?i:and) { return(AND); }
+(?i:do) { return(DO); }
+(?i:else) { return(ELSE); }
+(?i:end) { return(END); }
+(?i:endif) { return(ENDIF); }
+(?i:endfor) { return(ENDFOR); }
+(?i:endwhile) { return(ENDWHILE); }
+(?i:if) { return(IF); }
+(?i:for) {return (FOR);}
+(?i:fulprog) { return(FULPROG); }
+(?i:fulvar) {return (FULVAR);}
+(?i:fulin) { return(READ); }
+(?i:skip) { return(SKIP); }
+(?i:then) { return(THEN); }
+(?i:while) { return(WHILE); }
+(?i:fulout) { return(WRITE); }
+"remSpace"		{return remSpace;}
+"toUpper"		{return toUpper;}
+"toLower"		{return toLower;}
+"isEqual"		{return isEqual;}
+"substr"		{return substr;}
+"copystr"  	{return copystr;}
+"concat"	{return concat;}
+"strlen"	{return stringLeng;}
+"revstr"	{return revstr;}
+
+"mathSqrt"		{return mathSqrt;}
+ "mathCeil" 	{return mathCeil;}
+ "mathFloor" 	{return mathFloor;}
+ "mathFabs" 	{return mathFabs;}
+ "mathExp" 		{return mathExp;}
+ "mathLog10" 	{return mathLog10;}
+ "mathLog" 		{return mathLog;}
+ "mathSin" 		{return mathSin;}
+ "mathCos" 		{return mathCos;}
+ "mathTan" 		{return mathTan;}
+ "mathAsin" 	{return mathAsin;}
+ "mathAcos"		{return mathAcos;}
+ "mathAtan" 	{return mathAtan;}
+ "mathSinh" 	{return mathSinh;}
+ "mathCosh" 	{return mathCosh;}
+ "mathTanh"		{return mathTanh;}
+ "mathMod"		{return mathMod;}
+ "average"		{return AVERAGENUM;}
+ "min"			{return MINNUM;}
+ "max"			{return MAXNUM;}
+ "sum"			{return SUMNUM;}
+ "mul"			{return MULNUM;}
+ 
+ 
+{ID} { yylval.id = (char *) strdup(yytext);return(IDENTIFIER); }
+&{ID}|{ID}{DIGIT}|{ID}{DIGIT}{ID}    {
+    /* install the variable found to the array and return the index */
+    yylval.index = installs(yytext);
+    return VAR;
+}
+
+[0-9]*(\.[0-9]+)  {
+    /* convert yytext to a double and return it  */
+    yylval.num = atof(yytext);
+    return DOUBLENUM;
+}
+\"([^"]|\\.)*\"	{
+	yylval.comms =strdup(mysubstr(yytext));
+	return STMT;
+}
+
+
+[ \t\n]+ /* eat up whitespace */
+. { return(yytext[0]);}
+%%
+int yywrap(void){}
+/************************** End Scanner File *****************************/
